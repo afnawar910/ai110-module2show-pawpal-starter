@@ -3,6 +3,15 @@ from pawpal_system import Task, Pet, Owner, Scheduler
 
 st.set_page_config(page_title="PawPal+", page_icon="🐾", layout="wide")
 
+
+def _valid_time(value: str) -> bool:
+    """Return True if value is a valid HH:MM string."""
+    try:
+        parts = value.split(":")
+        return len(parts) == 2 and 0 <= int(parts[0]) <= 23 and 0 <= int(parts[1]) <= 59
+    except (ValueError, AttributeError):
+        return False
+
 # ---------------------------------------------------------------------------
 # Session state init
 # ---------------------------------------------------------------------------
@@ -275,12 +284,12 @@ with tab3:
 
             # 4. Interactive checklist (sorted by start_time via scheduler)
             st.subheader("✅ Today's checklist")
-            for pet, task in scheduled:
+            for i, (pet, task) in enumerate(scheduled):
                 col1, col2 = st.columns([7, 1])
                 time_str   = f" @ {task.start_time}" if task.start_time else ""
                 urgent_tag = " ⚠️" if task.is_urgent else ""
                 label = f"**[{pet.name}]** {task.name}{time_str} — {task.duration} min · {task.priority}{urgent_tag}"
-                checked = col1.checkbox(label, value=task.is_completed, key=f"chk_{pet.name}_{task.name}")
+                checked = col1.checkbox(label, value=task.is_completed, key=f"chk_{i}_{pet.name}_{task.name}")
                 if checked != task.is_completed:
                     if checked:
                         task.mark_done()
@@ -313,13 +322,3 @@ with tab3:
                 st.text(schedule.get_summary())
 
 
-# ---------------------------------------------------------------------------
-# Helper — validate HH:MM time string
-# ---------------------------------------------------------------------------
-def _valid_time(value: str) -> bool:
-    """Return True if value is a valid HH:MM string."""
-    try:
-        parts = value.split(":")
-        return len(parts) == 2 and 0 <= int(parts[0]) <= 23 and 0 <= int(parts[1]) <= 59
-    except (ValueError, AttributeError):
-        return False
