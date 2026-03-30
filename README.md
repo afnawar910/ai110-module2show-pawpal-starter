@@ -22,6 +22,19 @@ Your final app should:
 - Display the plan clearly (and ideally explain the reasoning)
 - Include tests for the most important scheduling behaviors
 
+## Features
+
+- **Owner & multi-pet setup** — create a profile with your daily available time and add as many pets as you have
+- **Task management with checklist** — add tasks per pet with category, duration, priority, frequency, and an optional start time; check tasks off as you go
+- **Duplicate detection** — warns you instantly if you add a task with the same name to the same pet
+- **Smart daily schedule** — one click generates a prioritized plan that fits within your time budget
+- **Time-of-day sorting** — tasks with a start time (HH:MM) are sorted chronologically; untimed tasks follow in priority order
+- **Filter view** — filter the task list by pet, completion status, or category
+- **Recurring tasks** — daily tasks appear every day; weekly tasks appear on Mondays; as-needed tasks are never auto-scheduled; completing a recurring task advances it to the next occurrence via `timedelta`
+- **Conflict detection** — flags overlapping time windows for the same pet before and after schedule generation
+- **Urgent reminders** — high-priority tasks that exceed your time budget are kept in the schedule and highlighted as must-do alerts
+- **Progress tracker** — a progress bar shows how many tasks you have completed during the day
+
 ## Smarter Scheduling
 
 PawPal+ includes four algorithms that make the daily planner more intelligent:

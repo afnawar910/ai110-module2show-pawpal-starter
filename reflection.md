@@ -24,8 +24,11 @@ Five classes: `Pet`, `Task`, `Owner`, `Schedule`, and `Scheduler`.
 
 **b. Design changes**
 
-- Did your design change during implementation?
-- If yes, describe at least one change and why you made it.
+Two significant changes were made during implementation:
+
+1. **Tasks moved from Owner to Pet.** The initial design stored tasks on the Owner. During implementation it became clear that tasks are logically tied to a specific animal (a walk is Mochi's walk, not Jordan's walk), so tasks were moved to Pet. Owner gained `get_all_tasks()` to aggregate across all pets when needed by the Scheduler.
+
+2. **Task gained `start_time`, `due_date`, and `next_occurrence()`.** The original Task was purely descriptive. Supporting time-based sorting, conflict detection, and recurring logic required adding a `start_time` (HH:MM string), a `due_date`, and a `next_occurrence()` method that uses `timedelta` to calculate the next scheduled date. This kept recurring logic inside the data class rather than scattering it across the Scheduler.
 
 ---
 
@@ -33,8 +36,13 @@ Five classes: `Pet`, `Task`, `Owner`, `Schedule`, and `Scheduler`.
 
 **a. Constraints and priorities**
 
-- What constraints does your scheduler consider (for example: time, priority, preferences)?
-- How did you decide which constraints mattered most?
+The scheduler considers three constraints:
+
+1. **Time budget** — the owner's daily available minutes. Tasks are sorted and fit greedily; those that exceed the budget are skipped unless high-priority.
+2. **Priority** — high/medium/low. High-priority tasks are always scheduled even if they exceed the budget (flagged as urgent). Medium and low tasks are dropped when time runs out.
+3. **Frequency (recurring logic)** — daily tasks appear every day; weekly tasks only on Mondays; as-needed tasks are never auto-scheduled.
+
+Time budget was treated as the primary constraint because it is the most concrete real-world limit. Priority was secondary because it determines which tasks survive when the budget is exceeded.
 
 **b. Tradeoffs**
 
@@ -48,13 +56,18 @@ This tradeoff is reasonable for the current scenario because the typical user ha
 
 **a. How you used AI**
 
-- How did you use AI tools during this project (for example: design brainstorming, debugging, refactoring)?
-- What kinds of prompts or questions were most helpful?
+AI (Claude / Copilot) was used across every phase:
+
+- **Design brainstorming** — asked for a Mermaid class diagram based on the four brainstormed objects; used the output as a starting point and manually adjusted relationships (e.g. moving tasks from Owner to Pet).
+- **Code generation** — generated class skeletons and method stubs, then filled in logic incrementally rather than accepting one large block.
+- **Test generation** — asked for edge cases ("pet with no tasks," "zero available time") that would have been easy to overlook, then reviewed each test before saving.
+- **Refactoring suggestions** — asked whether `detect_conflicts` could be simplified; evaluated the suggestion against readability before deciding.
+
+The most effective prompts were specific and scoped: *"Based on this skeleton, implement only the `generate()` method"* worked better than broad requests.
 
 **b. Judgment and verification**
 
-- Describe one moment where you did not accept an AI suggestion as-is.
-- How did you evaluate or verify what the AI suggested?
+When AI suggested making `Scheduler` a method on `Owner` (so the owner could schedule itself), the suggestion was rejected. Having a standalone `Scheduler` class keeps responsibilities separate — the Owner models data, the Scheduler models the algorithm. Mixing them would have made unit testing harder (you would need a full Owner object just to test one sorting function). The suggestion was evaluated by asking: *"Can I test this in isolation without constructing an Owner?"* — the answer was no, so the standalone design was kept.
 
 ---
 
@@ -62,13 +75,11 @@ This tradeoff is reasonable for the current scenario because the typical user ha
 
 **a. What you tested**
 
-- What behaviors did you test?
-- Why were these tests important?
+24 automated tests cover: task completion state, recurring next-occurrence dates, end-time calculation, pet task management, duplicate name detection, sort-by-time ordering, filter combinations, conflict detection (overlap and exact same time), empty owner/pet edge cases, zero-time-budget behavior, multi-pet aggregation, and the `advance_recurring` replacement flow. These were important because they verify both the happy paths (normal scheduling) and the edge cases (zero budget, no tasks, exact-time conflicts) that are most likely to cause silent bugs in production.
 
 **b. Confidence**
 
-- How confident are you that your scheduler works correctly?
-- What edge cases would you test next if you had more time?
+★★★★☆ — Core scheduling logic is well covered. The main untested area is the Streamlit UI layer: session state persistence across reruns and the interaction between checkbox state and `task.is_completed` are not covered by the automated suite. The next edge cases to test would be: a pet with 50+ tasks (performance), tasks whose combined duration exactly equals `available_time` (boundary condition), and an owner updating `available_time` mid-session.
 
 ---
 
@@ -76,12 +87,12 @@ This tradeoff is reasonable for the current scenario because the typical user ha
 
 **a. What went well**
 
-- What part of this project are you most satisfied with?
+The separation between the logic layer (`pawpal_system.py`) and the UI layer (`app.py`) worked well. Because all scheduling logic lives in plain Python classes with no Streamlit dependency, it was easy to write and run unit tests without launching the app. The UML-first approach also meant that class responsibilities were clear before any code was written, which reduced rework.
 
 **b. What you would improve**
 
-- If you had another iteration, what would you improve or redesign?
+The recurring task system is simple (daily = every day, weekly = every Monday). A real pet care app would need per-task day-of-week configuration (e.g., walks on Mon/Wed/Fri), time-window preferences (morning vs. evening), and the ability to mark a task as "skipped today but still due" rather than completed. The data model would need a `TaskSchedule` object to represent this without overloading the `Task` class.
 
 **c. Key takeaway**
 
-- What is one important thing you learned about designing systems or working with AI on this project?
+AI tools are most useful when you remain the architect. Asking AI to generate an entire system produces code that works but often reflects generic patterns rather than your specific design decisions. Asking AI to implement one method at a time — based on a design you already own — produces code that fits your system and is easy to evaluate and test. The lead architect's job is to make decisions that AI cannot: what belongs where, what the right tradeoff is, and when a "more Pythonic" suggestion should be rejected for readability.
